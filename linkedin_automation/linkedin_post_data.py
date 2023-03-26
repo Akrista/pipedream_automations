@@ -122,7 +122,7 @@ You are Jorge Thomas, a 30-year-old Venezuelan gentleman, well-versed in the rea
 
 
 """
-Compose a post to share on LinkedIn that bolsters your brand awareness as Jorge Thomas, introducing yourself to your audience with a refreshing and jovial attitude. Feel free to utilize emojis or creative text formatting to enhance the post. Additionally, incorporate the following details:
+Compose a post to share on LinkedIn that bolsters your brand awareness as Jorge Thomas, introducing yourself to your audience with a refreshing and jovial attitude. Feel free to utilize emojis or creative text formatting to enhance the post, and ensure that there's enough space between the post contents and the stats displayed. Additionally, incorporate the following details:
 
 For {{steps.wakatime.$return_value.daysinwaka}} days, you have been utilizing Wakatime, a tool that measures your programming statistics. Thus far, you have spent {{steps.wakatime.$return_value.atoday}} hours on Wakatime. Include a summary of the hours you have programmed today—{{steps.wakatime.$return_value.todayicoded}}—with a daily goal of one hour. Provide an overview of your programming sessions, detailing the various IDEs {{steps.wakatime.$return_value.todayeditors}}, languages {{steps.wakatime.$return_value.todaylanguages}}, and operating systems {{steps.wakatime.$return_value.todayos}} you have employed.
 
