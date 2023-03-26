@@ -1,6 +1,5 @@
 import requests
 from datetime import datetime
-# from datetime import date, datetime, timedelta
 from dateutil import tz
 
 
@@ -54,13 +53,13 @@ def handler(pd: "pipedream"):
     # Listing Editors, Languages and Operating Systems
 
     for i in summaries['data'][0]['editors']:
-        editors += '- ' + i['name'] + ' ' + i['text'] + '\n'
+        editors += i['name'] + ' ' + i['text'] + '\n'
 
     for i in summaries['data'][0]['languages']:
-        languages += '- ' + i['name'] + ' ' + i['text'] + '\n'
+        languages += i['name'] + ' ' + i['text'] + '\n'
 
     for i in summaries['data'][0]['operating_systems']:
-        operating_systems += '- ' + i['name'] + ' ' + i['text'] + '\n'
+        operating_systems += i['name'] + ' ' + i['text'] + '\n'
 
     # Adding Wakatime Data to the array
     data['atoday'] = atoday.json()['data']['text']
@@ -74,51 +73,65 @@ def handler(pd: "pipedream"):
 
     # Steam User Data
     steam_user_data = requests.get(
-        'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key='+steam_api_key+'&steamids=' + steam_id)
+        'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key='+steam_api_key+'&steamids=' + steam_id).json()
+
+    # Steam Games Owned
+    steam_games_owned = requests.get(
+        'https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key='+steam_api_key+'&steamid=' + steam_id+'&format=json').json()
+
+    # Steam Recently Played Games
+    steam_recently_played_games = requests.get(
+        'https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key='+steam_api_key+'&steamid=' + steam_id+'&count=3').json()
+
+    # Recently Played Games
+    recently_played_games = ''
+
+    for i in steam_recently_played_games['response']['games']:
+
+        steam_game_achievements = requests.get(
+            'https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid='+str(i['appid'])+'&key='+steam_api_key+'&steamid=' + steam_id).json()
+
+        # Count every steam_game_achievements['playerstats']['achievements'] that has 'achieved' = 1
+        steam_game_achievements_count = 0
+        if 'achievements' in steam_game_achievements['playerstats']:
+            for j in steam_game_achievements['playerstats']['achievements']:
+                if j['achieved'] == 1:
+                    steam_game_achievements_count += 1
+        else:
+            steam_game_achievements_count = "0"
+
+        recently_played_games += i['name'] + ' ' + str(i['playtime_2weeks']) + ' hours,' + ' ' + str(
+            i['playtime_forever']) + ' total hours, Appid ' + str(i['appid']) + ' ' + str(steam_game_achievements_count) + ' achievements unlocked\n'
 
     steam_created_at = datetime.fromtimestamp(
-        steam_user_data.json()['response']['players'][0]['timecreated'])
+        steam_user_data['response']['players'][0]['timecreated'])
 
-    data['steam_created_at'] = steam_created_at
+    # Adding Steam Data to the array
+    data['steam_created_at'] = steam_created_at.strftime('%d/%m/%Y')
+    data['steam_name'] = steam_user_data['response']['players'][0]['personaname']
+    data['steam_recently_played_games'] = recently_played_games
+    data['steam_games_owned'] = steam_games_owned['response']['game_count']
 
     # Export the data for use in next steps
     return data
 
 
 """
-Hi! I'm {{steps.wakatime.$return_value.fullname}} and you'll sure be seeing this a lot every day 😅
-
-📅 This is day {{steps.wakatime.$return_value.daysinwaka}} since i started using @wakatime and so far i got {{steps.wakatime.$return_value.atoday}} coding with wakatime.
-
-Some time ago i've started to do the #100DaysOfCode challenge, and i really liked the idea of measuring how much i'm using my time everyday to practice the things i love to do with code.
+You are Jorge Thomas, a 30-year-old Venezuelan gentleman, well-versed in the realm of information systems, with expertise as a junior system administrator, database overseer, and backend developer. Each day, you diligently craft content to be disseminated on the professional networking platform LinkedIn, striving to bolster your personal brand's recognition. You impart knowledge regarding the volume of code penned daily, the programming languages, operating systems, and integrated development environments employed in your ongoing endeavors. Additionally, you divulge details about the recent digital amusements you've engaged with on the Steam platform.
+"""
 
 
-So here's a little summary of what i did today:
+"""
+Compose a post to share on LinkedIn that bolsters your brand awareness as Jorge Thomas, introducing yourself to your audience with a refreshing and jovial attitude. Feel free to utilize emojis or creative text formatting to enhance the post. Additionally, incorporate the following details:
 
-⏱ I coded {{steps.wakatime.$return_value.todayicoded}} towards my @WakaTime goal of coding 1 hr per day.
+For {{steps.wakatime.$return_value.daysinwaka}} days, you have been utilizing Wakatime, a tool that measures your programming statistics. Thus far, you have spent {{steps.wakatime.$return_value.atoday}} hours on Wakatime. Include a summary of the hours you have programmed today—{{steps.wakatime.$return_value.todayicoded}}—with a daily goal of one hour. Provide an overview of your programming sessions, detailing the various IDEs {{steps.wakatime.$return_value.todayeditors}}, languages {{steps.wakatime.$return_value.todaylanguages}}, and operating systems {{steps.wakatime.$return_value.todayos}} you have employed.
 
-📓 For my coding sessions i used these editors:
+Mention that you have been using Steam since {{steps.wakatime.$return_value.steam_created_at}}, have amassed {{steps.wakatime.$return_value.steam_games_owned}} games, and recently played the following games: {{steps.wakatime.$return_value.steam_recently_played_games}}. Utilize the appid to construct the link for each Steam game page, for example: https://store.steampowered.com/app/appid
 
-{{steps.wakatime.$return_value.todayeditors}}
-
-📜 The languages that i used were:
-
-{{steps.wakatime.$return_value.todaylanguages}}
-
-🖥 And the OS that i used:
-
-{{steps.wakatime.$return_value.todayos}}
-
-
-This is a simple post automatization that i did with pipedream.com working with the wakatime api, so i can show some useless info like the amount of hours i have code since i created my wakatime account or the last editor i used with wakatime.
-
-If you want to use my code for this automatization, here it is: https://gist.github.com/Akrista/709ab17e5b7ef2cf7d3cb31f59f76de6
-It's not perfect, so if you have any sugestion on how to improve it, please tell me in the comments or in github.
+Lastly, remark that this automation was executed with Pipedream and ChatGPT, the code used can be found here: https://github.com/Akrista/pipedream_automations. Share your social media links:
 
 https://github.com/akrista
 https://linktr.ee/akrista
 https://akrista.github.io/
 https://wakatime.com/@akrista
-
-#personaldevelopment #productivity #Training #programing
 """
